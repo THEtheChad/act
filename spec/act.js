@@ -2,14 +2,14 @@ describe('Accessor Class', function() {
 
   var obj;
 
-  beforeEach(function(){
+  beforeEach(function() {
 
     obj = new Accessor({
       'crazy': {
-        'nested' : {
-          'object' : {
-            'to' : {
-              'test' : {
+        'nested': {
+          'object': {
+            'to': {
+              'test': {
                 'with': 42
               }
             }
@@ -25,10 +25,10 @@ describe('Accessor Class', function() {
 
     expect(obj.object).toEqual({
       'crazy': {
-        'nested' : {
-          'object' : {
-            'to' : {
-              'test' : {
+        'nested': {
+          'object': {
+            'to': {
+              'test': {
                 'with': 42
               }
             }
@@ -49,7 +49,7 @@ describe('Accessor Class', function() {
 
   it('SET: obj.set(path, value, create)', function() {
 
-    expect(function(){
+    expect(function() {
       obj.set('non-existent.nested.object', 22, false);
     }).toThrow();
 
@@ -63,93 +63,180 @@ describe('Accessor Class', function() {
 
   it('GET: obj.get(path, create)', function() {
 
-    expect(function(){
+    expect(function() {
       var val = obj.get('non-existent.nested.object', false);
     }).toThrow();
   });
 
 });
 
+describe('Definition Class', function() {
 
-describe('Act Class', function() {
+  it('on (stateless)', function() {
 
-  beforeEach(function(){
-  });
+    var def, count;
 
-  it('blah', function(done){
-    var act = new Act();
+    def = new Definition();
+    count = 0;
 
-    act.define({
-      event: 'pageName',
-      timeout: 4000
+    def.set(1);
+
+    def.on('change', function(){
+      count++;
     });
 
-    act.on('pageName', function(err, data){
-      console.log(err);
-      expect().toEqual();
-      done();
-    });
-  }); 
+    def.set(2);
+    def.set(3);
+    def.set(4);
 
-  it('publish', function() {
-
-    var act = new Act(), data;
-    act.publish('test', 1234);
-
-    data = act.events;
-
-    expect(data).toEqual({test:1234});
+    expect(count).toEqual(3);
   });
 
-  it('subscribe', function(done) {
+  it('on (stateful)', function() {
 
-    var act = new Act();
+    var def, count;
 
-    act.subscribe('test', function(data){
-      expect(data).toEqual(1234);
-      done();
-    });
+    def = new Definition();
+    count = 0;
 
-    act.publish('test', 1234);
+    def.set(1);
+
+    def.on('change', function(){
+      count++;
+    }, true);
+
+    def.set(2);
+    def.set(3);
+    def.set(4);
+
+    expect(count).toEqual(4);
   });
 
-  it('get', function() {
+  it('once pre-fire (stateless)', function() {
 
-    var act = new Act(), data;
+    var def, count;
 
-    act.publish('test', 1234);
-    data = act.get('test');
+    def = new Definition();
+    count = 0;
+
+    def.set(1);
+
+    def.one('change', function(){
+      count++;
+    });
+
+    expect(count).toEqual(0);
+  });
+
+  it('once post-fire (stateless)', function() {
+
+    var def, count;
+
+    def = new Definition();
+    count = 0;
+
+    def.set(1);
+
+    def.one('change', function(){
+      count++;
+    });
+
+    def.set(2);
+    def.set(3);
+    def.set(4);
+
+    expect(count).toEqual(1);
+  });
+
+  it('validator', function() {
+
+    var def, success;
+
+    def = new Definition({
+      valid: function(data){ return (data == 2) }
+    });
+
+    success1 = def.set(1);
+    success2 = def.set(2);
+
+    expect(success1).toBe(false);
+    expect(success2).toBe(true);
+  });
+
+});
+
+describe('Act Class', function(){
+
+  it('onChange', function() {
+
+    var act, count;
+
+    act = new Act();
+    count = 0;
+
+    act.publish('custom.event', 1234);
+
+    act.onChange('custom.event', function(){
+      count++;
+    });
+
+    act.publish('custom.event', 2);
+    act.publish('custom.event', 3);
+    act.publish('custom.event', 4);
+
+    expect(count).toEqual(3);
+  });
+
+  it('resolve', function() {
+
+    var act, data;
+
+    act = new Act();
+
+    act.publish('dep.one', 1);
+    act.publish('dep.two', 2);
+    act.publish('dep.three', 3);
+    act.publish('dep.four', 4);
+
+    act.resolve([
+      'dep.one',
+      'dep.two',
+      'dep.three',
+      'dep.four'
+    ], function(obj){
+      data = obj;
+    });
+
+    expect(data).toEqual({
+      'dep.one': 1,
+      'dep.two': 2,
+      'dep.three': 3,
+      'dep.four': 4
+    });
+  });
+
+  it('push', function(){
+    var data;
+
+    window.act || (act = [])
+    act.push({
+      command: 'subscribe',
+      event: 'mytest.event',
+      callback: function(value){
+        data = value;
+      }
+    });
+
+    window.act || (act = [])
+    act.push({
+      command: 'publish',
+      event: 'mytest.event',
+      data: 1234
+    });
+
+    act = new Act(act);
 
     expect(data).toEqual(1234);
   });
 
 });
-/*
-describe('complex API', function() {
-  var ACT;
-
-  beforeEach(function(){
-    ACT = new Act();
-
-    ACT.define({
-      event: 'pageName',
-      validator: function(){ return true; },
-      mutator: function(d){ return d; },
-      timeout: 4000,
-      onTimeout: function(act){ act.publish(this.event) },
-      onSuccess: function(){},
-      onError: function(){},
-      history: 0,
-      complete: function(){ return true; },
-      updateable: false
-    });
-  });
-
-  it('timeout', function(done) {
-
-    ACT.subscribe('pageName', function(data){
-      done();
-    });
-  });
-});
-*/

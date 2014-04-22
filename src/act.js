@@ -56,67 +56,214 @@
 			return obj;
 		},
 
-		set: function(path /* string */, value /* any */, create /* falsy */){
+		last: function(path /* string */, action /* func */, create /* truthy */){
 			var last, obj;
 
 			path = path.split('.');
 			last = path.pop();
-			create = (arguments.length > 2) ? create : true;
 
 			obj = this.traverse(path, create);
 
-			obj[last] = value;
+			return action(last, obj);	
+		},
+
+		set: function(path /* string */, value /* any */, create /* truthy */){
+			create = (arguments.length > 2) ? create : true;
+
+			this.last(path, function(key, obj){
+				obj[key] = value;
+			}, create);
 
 			return this;
 		},
 
-		get: function(path /* string */, create /* falsy */){
+		get: function(path /* string */, create /* truthy */){
+			create = (arguments.length > 1) ? create : true;
 
-			path   = path.split('.');
-			create = (arguments.length > 1) ? create : true; 
+			return this.last(path, function(key, obj){
+				return obj[key];
+			}, create);
+		},
 
-			return this.traverse(path, create);
+		push: function(path /* string */, value /* any */, create /* truthy */){
+			var arr;
+
+			create = (arguments.length > 2) ? create : true;
+
+			this.last(path, function(key, obj){
+				arr = obj[key] || (obj[key] = []);
+			});
+
+			arr.push(value);
+
+			return this;
+		}
+	};
+
+	/* DEFINITION CLASS */
+
+	function Definition(obj){
+		this.actions = {
+			create: [],
+			change: [],
+			transitioning: [],
+			error: []
+		};
+
+		this.history = 0;
+
+    // event: 'pageName'
+    // timeout: 4000
+		extend(this, obj);
+	}
+
+	Definition.prototype = {
+
+		// ACCESSORS
+
+		get: function(){
+			return this.data;
+		},
+
+		set: function(data){
+			if(!this.valid(data)) return false;
+
+	  	this.data = this.mutate(data);
+
+			if(!this.isSet()){
+				if(!this.isTransitioning()) this.fire('create');
+
+				this.state = 'set';
+			}
+
+	  	this.fire('change');
+
+	  	return true;
+		},
+
+		// FALLBACKS
+
+		valid: function(){
+			return true;
+		},
+
+		mutate: function(data){
+			return data;
+		},
+
+		complete: function(){
+			return true;
+		},
+
+		// STATES
+
+		isSet: function(){
+			return (this.state == 'set');
+		},
+
+		isTransitioning: function(){
+			return (this.state == 'transitioning');
+		},
+
+		hasError: function(){
+			return (this.state == 'error');
+		},
+
+		// TRIGGERS
+
+		fire: function(type){
+			var acts, data, i;
+
+			type = type || 'change';
+			acts = this.actions[type];
+			i    = acts.length;
+			data = this.data;
+
+			while(i--) acts[i](data);
+		},
+
+		error: function(msg){
+			this.state = 'error';
+			this.fire('error');
+		},
+
+		transitioning: function(){
+			this.state = 'transitioning';
+			this.fire('transitioning');
+		},
+
+		// EVENTS
+
+		on: function(type, func, stateful){
+			if(stateful && this.isSet()) func(this.data);
+
+			this.actions[type].push(func);
+		},
+
+		one: function(type, func, stateful){
+			var self = this;
+
+			if(stateful && this.isSet()){
+				func(self.data);
+			}
+			else{
+				this.actions[type].push(function once(){
+					func(self.data);
+					self.off(type, once);
+				});
+			}
+		},
+
+		off: function(type, func){
+			var actions, idx;
+
+			actions = this.actions[type];
+			idx = actions.indexOf(func);
+
+			actions.splice(idx, 1);
+		},
+
+		// SUGAR
+
+		onChange: function(func, stateful){
+			this.on('change', func, stateful);
 		}
 	};
 
 	/* ACT CLASS */
 
 	function Act(queue){
-		this.events  = {};
-		this.actions = {};
-		this.definitions = {};
+		this.definitions = new Accessor({});
 
 		if(queue){
-			var i = queue.length;
-			while(i--) this.push(queue[i]);
+			for(var i = 0, l = queue.length; i < l; i++){
+				this.push(queue[i]);
+			}
 		}
 	}
 
 	Act.prototype = {
 
-	  push: function(definition){
-	  	var evt  = definition.event;
-	  	var func = definition.callback;
-	  	var data = definition.data;
-
-	  	switch(definition.operation){
-	  		case 'publish'   : return this.publish(evt, data);
-	  		case 'subscribe' : return this.subscribe(evt, func);
-	  		case 'get'       : return this.get(evt);
+	  push: function(def){
+	  	switch(def.operation || def.command){
+	  		case 'publish'   : return this.publish(def.event, def.data);
+	  		case 'subscribe' : return this.subscribe(def.event, def.callback);
+	  		case 'get'       : return this.get(def.event);
 	  	}
 	  },
 
+	  getDefinition: function(evt){
+			return this.definitions.last(evt, function(key, obj){
+	  		return obj[key] || (obj[key] = new Definition());
+	  	}, true);
+	  },
+
 	  define: function(opts){
-	  	var self, def;
-
-	  	self = this;
-	  	def = {};
-
-	  	extend(def, opts);
+	  	var def = new Definition(opts);
 
 	  	if(def.timeout) this.defineTimeout(def);
 
-		  this.definitions[def.event] = def;
+		  this.definitions.set(def.event, def);
 	  },
 
 	  defineTimeout: function(def){
@@ -132,55 +279,54 @@
 	  	}, opts.delay);
 	  },
 
-	  fire: function(){
-	  	this.publish(evt, data);
-	  },
-
-	  on: function(evt, func){
-	  	this.subscribe(evt, func);
-	  },
-
 	  subscribe: function(evt, func){
-	  	var data = this.events[evt];
-
-	  	if(data) func(data);
-
-	  	if(!this.actions[evt]) this.actions[evt] = [];
-
-	  	this.actions[evt].push(func);
+	  	this.getDefinition(evt).on('change', func);
 	  },
 
 	  publish: function(evt, data){
-	  	var def, acts;
+	  	this.getDefinition(evt).set(data);
+	  },
 
-	  	def  = this.definitions[evt];
-	  	acts = this.actions[evt];
+	  resolve: function(deps, func){
+	  	var l, i, evt, counter, resolver, collector;
 
-	  	// def  = this.definitions.get(evt);
-	  	// acts = def.actions;
+	  	l = i = deps.length;
+	  	counter = {count: l};
+	  	collector = {};
 
-	  	this.events[evt] = data;
+	  	while(i--){
+	  		evt = deps[i];
+	  		resolver = (function(evt, collector, counter, func){
+	  			return function(data){
+	  				collector[evt] = data;
 
-	  	if(!acts) return;
+	  				if(!--counter.count) func(collector);
+	  			}
+	  		})(evt, collector, counter, func);
 
-	  	var i = acts.length;
-	  	while(i--) acts[i](data);
+	  		this.getDefinition(evt).one('change', resolver, true);
+	  	}
+	  },
+
+	  onChange: function(evt, func, stateful){
+	  	this.getDefinition(evt).onChange(func, stateful);
+	  },
+
+	  onCreate: function(evt, func, stateful){
+	  	this.getDefinition(evt).onCreate(func, stateful);
 	  },
 
 	  error: function(evt, msg){
-	  	var err;
-
-	  	err = new Error(msg);
-
-	  	this.publish(evt, err, null);
+	  	this.getDefinition(evt).error(msg);
 	  },
 
 	  get: function(evt){
-	  	return this.events[evt];
+	  	return this.getDefinition(evt).get();
 	  }
 	}
 
 	window.Accessor = Accessor;
 	window.Act = Act;
+	window.Definition = Definition;
 	
 })();
