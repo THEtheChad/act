@@ -4,12 +4,9 @@
 function State(obj){
 	var self = this;
 
-	self.actions = {};
-
 	self.index = 0;
 	self.bufferLength = 2;
 	self.buffer = [];
-	self.buffer.error = null;
 	// self.data = [];
 	// self.data.error = null;
 
