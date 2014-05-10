@@ -22,25 +22,19 @@ State.prototype = {
 
 	// ACCESSORS
 
-	get: function(idx){
+	get: function(idx, ret){
 		idx = idx || this.index;
-		return this.buffer[idx];
+		ret = this.buffer[idx];
+
+		return ret[0] || ret[1];
 	},
 
-	set: function(data){
+	set: function(data, err){
 		if(!this.validator(data)) return false;
 
 		data = this.mutator(data);
 
-  	if( this.isNew() ){
-  		this.buffer.initial = data;
-  		this.state = 'set';
-  		this.fire('create', this.buffer.initial);
-  	}
-
-  	this.setData(data);
-
-  	this.fire('change');
+  	this.setState(err, data);
 
   	return true;
 	},
@@ -65,6 +59,10 @@ State.prototype = {
 		return (this.state == null);
 	},
 
+	isUnset: function(){
+		return (this.state == null);
+	},
+
 	isSet: function(){
 		return (this.state == 'set');
 	},
@@ -74,85 +72,126 @@ State.prototype = {
 	},
 
 	hasError: function(){
-		return !!this.buffer.error;
+		return (this.get() instanceof Error);
 	},
 
 	// TRIGGERS
 
-	fire: function(type, data){
-		var acts, data, i;
+	onAll: function(func){
+		this.each(func);
+		this.onNext(func);
+	},
 
-		acts = this.getActions(type);
-		i    = acts.length;
-		data = data || this.get();
-		err  = this.buffer.error;
+	onNext: function(func){
+		this.on('change', func);
+	},
 
-		while(i--) acts[i](err, data);
+	onCreate: function(func){
+		if( this.isUnset() ){
+			this.once('create', func);
+		}
+		else{
+			var args = this.buffer.initial;
+			func(args[0], args[1]);
+		}
+	},
+
+	each: function(func){
+		var buffer, i, args;
+		for(i = 0, il = buffer.length; i < il; i++){
+			args = buffer[i];
+
+			func(args[0], args[1]);
+		}
 
 		return this;
 	},
 
-	error: function(opts){
-		var err;
+	error: function(err, data){
+		data = data || null;
+		err  = new Error(err);
 
-		opts = !opts.message ? {message: opts} : opts;
-
-		err = extend(new Error(), opts);
-
-		this.buffer.error = err;
-		this.state = 'error';
-
-		this.fire('error');
-		this.fire('change');
+		this.setState(err, data);
 
 		return this;
-	},
+	}
 
-	transition: function(){
-		this.state = 'transition';
-		this.fire('transition');
+	// fire: function(type, data){
+	// 	var acts, data, i;
 
-		return this;
-	},
+	// 	acts = this.getActions(type);
+	// 	i    = acts.length;
+	// 	data = data || this.get();
+	// 	err  = this.buffer.error;
+
+	// 	while(i--) acts[i](err, data);
+
+	// 	return this;
+	// },
+
+	// error: function(opts){
+	// 	var err;
+
+	// 	opts = !opts.message ? {message: opts} : opts;
+
+	// 	err = extend(new Error(), opts);
+
+	// 	this.buffer.error = err;
+	// 	this.state = 'error';
+
+	// 	this.fire('error');
+	// 	this.fire('change');
+
+	// 	return this;
+	// },
+
+	// transition: function(){
+	// 	this.state = 'transition';
+	// 	this.fire('transition');
+
+	// 	return this;
+	// },
 
 	// EVENTS
 
-	on: function(type, func, stateful){
-		if(type == 'create' || stateful == null) stateful = true;
+	// on: function(type, func, stateful){
+	// 	if(type == 'create' || stateful == null) stateful = true;
 
-		if(stateful) this.checkState(type, func);
+	// 	if(stateful) this.checkState(type, func);
 
-		this.getActions(type).push(func);
+	// 	this.getActions(type).push(func);
 
-		return this;
-	},
+	// 	return this;
+	// },
 
-	once: function(type, func, stateful){
-		var self = this;
+	// once: function(type, func, stateful){
+	// 	var self = this;
 
-		return self.on(type, function once(err, data){
-			func(err, data);
-			self.off(type, once);
-		}, stateful);
-	},
+	// 	return self.on(type, function once(err, data){
+	// 		func(err, data);
+	// 		self.off(type, once);
+	// 	}, stateful);
+	// },
 
-	off: function(type, func){
-		var actions, idx;
+	// off: function(type, func){
+	// 	var actions, idx;
 
-		actions = this.getActions(type);
-		idx = actions.indexOf(func);
+	// 	actions = this.getActions(type);
+	// 	idx = actions.indexOf(func);
 
-		actions.splice(idx, 1);
+	// 	actions.splice(idx, 1);
 
-		return this;
-	},
+	// 	return this;
+	// },
 
 	// HELPERS
 
-	setData: function(data){
-		var idx;
+	setState: function(err, data){
+		var idx, dataSet;
 
-		idx = this.buffer.push(data);
+		dataSet = [err, data];
+
+		idx = this.buffer.push(dataSet);
 
 		if(idx > this.bufferLength){
 			this.buffer.shift();
@@ -161,7 +200,17 @@ State.prototype = {
 			this.index = --idx;
 		}
 
-  	this.buffer.error = null;
+  	if( this.isUnset() ){
+  		this.buffer.initial = dataSet;
+  		this.state = 'set';
+  		this.fire('create', err, data);
+  	}
+
+  	if(err) this.fire('error', err, data);
+
+  	this.fire('change', err, data);
+
+  	return this;
 	},
 
 	timeout: function(state, delay){
@@ -195,38 +244,40 @@ State.prototype = {
 		state.onCreate(resolver);
 
 		return self;
-	},
+	}
 
-	checkState: function(type, func){
-		if(!this.isNew()){
-			var data = (type == 'create') ? this.buffer.initial : this.get();
-			func(this.buffer.error, data);
-		}
-	},
+	// checkState: function(type, func){
+	// 	if(!this.isNew()){
+	// 		var data = (type == 'create') ? this.buffer.initial : this.get();
+	// 		func(this.buffer.error, data);
+	// 	}
+	// },
 
-	getActions: function(type){
-		return this.actions[type] || (this.actions[type] = []);
-	},
+	// getActions: function(type){
+	// 	return this.actions[type] || (this.actions[type] = []);
+	// },
 
 	// SUGAR
 
-	onChange: function(func, stateful){
-		return this.on('change', func, stateful);
-	},
+	// onChange: function(func, stateful){
+	// 	return this.on('change', func, stateful);
+	// },
 
-	onTransition: function(func, stateful){
-		return this.on('transition', func, stateful)
-	},
+	// onTransition: function(func, stateful){
+	// 	return this.on('transition', func, stateful)
+	// },
 
-	onCreate: function(func){
-		return this.on('create', func);
-	},
+	// onCreate: function(func){
+	// 	return this.on('create', func);
+	// },
 
-	onError: function(func){
-		return this.on('error', func);
-	},
+	// onError: function(func){
+	// 	return this.on('error', func);
+	// },
 
-	onTimeout: function(func){
-		return this.on('timeout', func);
-	}
+	// onTimeout: function(func){
+	// 	return this.on('timeout', func);
+	// }
 };
+
+addEvents(State);
