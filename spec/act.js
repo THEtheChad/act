@@ -2,7 +2,7 @@
 
 describe('Act Class', function(){
 
-  it('onChange (stateless)', function() {
+  it('onNext', function() {
 
     var act, count;
 
@@ -11,9 +11,9 @@ describe('Act Class', function(){
 
     act.set('custom.event', 1234);
 
-    act.onChange('custom.event', function(){
+    act.onNext('custom.event', function(){
       count++;
-    }, false);
+    });
 
     act.set('custom.event', 2);
     act.set('custom.event', 3);
@@ -22,7 +22,7 @@ describe('Act Class', function(){
     expect(count).toEqual(3);
   });
 
-  it('onChange (stateful)', function() {
+  it('onAll', function() {
 
     var act, count;
 
@@ -32,7 +32,7 @@ describe('Act Class', function(){
     act.set('custom.event', 1234);
     act.set('custom.event', 8);
 
-    act.onChange('custom.event', function(){
+    act.onAll('custom.event', function(){
       count++;
     });
 
@@ -40,7 +40,7 @@ describe('Act Class', function(){
     act.set('custom.event', 3);
     act.set('custom.event', 4);
 
-    expect(count).toEqual(4);
+    expect(count).toEqual(5);
   });
 
   it('onCreate', function() {
@@ -68,94 +68,94 @@ describe('Act Class', function(){
     expect(value).toEqual(1234);
   });
 
-  it('resolve', function() {
+  // it('resolve', function() {
 
-    var act, data;
+  //   var act, data;
 
-    act = new Act();
+  //   act = new Act();
 
-    act.set('dep.one', 1);
-    act.set('dep.two', 2);
-    act.set('dep.three', 3);
-    act.set('dep.four', 4);
+  //   act.set('dep.one', 1);
+  //   act.set('dep.two', 2);
+  //   act.set('dep.three', 3);
+  //   act.set('dep.four', 4);
 
-    act.resolve([
-      'dep.one',
-      'dep.two',
-      'dep.three',
-      'dep.four'
-    ], function(err, data){
-      expect(data['dep.one']).toEqual(1);
-      expect(data['dep.two']).toEqual(2);
-      expect(data['dep.three']).toEqual(3);
-      expect(data['dep.four']).toEqual(4);
-    });
-  });
+  //   act.resolve([
+  //     'dep.one',
+  //     'dep.two',
+  //     'dep.three',
+  //     'dep.four'
+  //   ], function(err, data){
+  //     expect(data['dep.one']).toEqual(1);
+  //     expect(data['dep.two']).toEqual(2);
+  //     expect(data['dep.three']).toEqual(3);
+  //     expect(data['dep.four']).toEqual(4);
+  //   });
+  // });
 
-  it('resolve (multiple)', function(done) {
+  // it('resolve (multiple)', function(done) {
 
-    var act, count;
+  //   var act, count;
 
-    act = new Act();
-    count = 0;
+  //   act = new Act();
+  //   count = 0;
 
-    act.set('dep.one', 1);
-    act.set('dep.two', 2);
-    act.set('dep.three', 3);
-    act.set('dep.four', 4);
+  //   act.set('dep.one', 1);
+  //   act.set('dep.two', 2);
+  //   act.set('dep.three', 3);
+  //   act.set('dep.four', 4);
 
-    act.resolve([
-      'dep.one',
-      'dep.two',
-      'dep.three',
-      'dep.four'
-    ], function(err, data){
-      expect(data['dep.one']).toEqual(1);
-      expect(data['dep.two']).toEqual(2);
-      expect(data['dep.three']).toEqual(3);
+  //   act.resolve([
+  //     'dep.one',
+  //     'dep.two',
+  //     'dep.three',
+  //     'dep.four'
+  //   ], function(err, data){
+  //     expect(data['dep.one']).toEqual(1);
+  //     expect(data['dep.two']).toEqual(2);
+  //     expect(data['dep.three']).toEqual(3);
 
-      if(++count > 2){
-        expect(data['dep.four']).toEqual(27);
-        done();
-      }
-      else{
-        expect(data['dep.four']).toEqual(4);
-      }
-    });
+  //     if(++count > 2){
+  //       expect(data['dep.four']).toEqual(27);
+  //       done();
+  //     }
+  //     else{
+  //       expect(data['dep.four']).toEqual(4);
+  //     }
+  //   });
 
-    act.set('dep.four', 4);
-    act.set('dep.four', 27);
-  });
+  //   act.set('dep.four', 4);
+  //   act.set('dep.four', 27);
+  // });
 
-  it('resolve (multiple)', function(done) {
+  // it('resolve (multiple)', function(done) {
 
-    var act, count;
+  //   var act, count;
 
-    act = new Act();
-    count = 0;
+  //   act = new Act();
+  //   count = 0;
 
-    act.set('dep.one', 1);
-    act.set('dep.two', 2);
-    act.set('dep.three', 3);
-    act.set('dep.four', 4);
+  //   act.set('dep.one', 1);
+  //   act.set('dep.two', 2);
+  //   act.set('dep.three', 3);
+  //   act.set('dep.four', 4);
 
-    act.resolve([
-      'dep.one',
-      'dep.two',
-      'dep.three',
-      'dep.four'
-    ], 'state.to.resolve');
+  //   act.resolve([
+  //     'dep.one',
+  //     'dep.two',
+  //     'dep.three',
+  //     'dep.four'
+  //   ], 'state.to.resolve');
 
-    act.set('dep.four', 4);
-    act.set('dep.four', 27);
+  //   act.set('dep.four', 4);
+  //   act.set('dep.four', 27);
 
-    window.act = act;
+  //   window.act = act;
 
-    act.onChange('state.to.resolve', function(err, data){
-      expect(1).toEqual(1);
-      done();
-    });
-  });
+  //   act.onChange('state.to.resolve', function(err, data){
+  //     expect(1).toEqual(1);
+  //     done();
+  //   });
+  // });
 
   it('timeout -- ms', function(done) {
 
@@ -165,7 +165,7 @@ describe('Act Class', function(){
 
     act.timeout('timeout.state', 1000);
 
-    act.onChange('timeout.state', function(err, data){
+    act.onAll('timeout.state', function(err, data){
       expect(err.type).toEqual('timeout');
       done();
     });
@@ -181,28 +181,28 @@ describe('Act Class', function(){
 
     act.set('timeout.dep', true);
 
-    act.onChange('timeout.state', function(err, data){
+    act.onAll('timeout.state', function(err, data){
       expect(err.type).toEqual('timeout');
       done();
     });
   });
 
-  it('sub dep set', function() {
+  // it('sub dep set', function() {
 
-    var act;
+  //   var act;
 
-    act = new Act();
+  //   act = new Act();
 
-    act.onCreate('parent.state.b', function(err, data){
-      expect(data).toEqual(2);
-    });
+  //   act.onCreate('parent.state.b', function(err, data){
+  //     expect(data).toEqual(2);
+  //   });
 
-    act.onChange('parent.state.a', function(err, data){
-      expect(data).toEqual(1);
-    });
+  //   act.onChange('parent.state.a', function(err, data){
+  //     expect(data).toEqual(1);
+  //   });
 
-    act.set('parent.state', {a:1,b:2,c:3});
+  //   act.set('parent.state', {a:1,b:2,c:3});
 
-  });
+  // });
 
 });

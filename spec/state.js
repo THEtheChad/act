@@ -1,4 +1,4 @@
-describe('State :: Set', function() {
+describe('State', function() {
 
   it('set -- set + get', function() {
 
@@ -11,14 +11,14 @@ describe('State :: Set', function() {
 
   });
 
-  it('set -- set + onChange', function(done) {
+  it('set -- set + onAll', function(done) {
 
     var state;
 
     state = new State();
     state.set('123');
 
-    state.onChange(function(err, data){
+    state.onAll(function(err, data){
       expect(data).toEqual('123');
       done();
     });
@@ -36,7 +36,7 @@ describe('State :: Errors', function(){
     state = new State();
     state.error('Data is broken.');
 
-    state.onChange(function(err, data){
+    state.onAll(function(err, data){
       expect(err.message).toEqual('Data is broken.');
       done();
     });
@@ -48,30 +48,15 @@ describe('State :: Errors', function(){
     var state;
 
     state = new State();
-    state.error({
-      message: 'custom message',
-      type: 'custom'
-    });
 
-    state.onChange(function(err, data){
-      expect(err.message).toEqual('custom message');
-      expect(err.type).toEqual('custom');
-      done();
-    });
+    var err = new Error();
 
-  });
+    err.message = 'custom message';
+    err.type = 'custom';
 
-  it('error -- onError', function(done) {
+    state.error(err);
 
-    var state;
-
-    state = new State();
-    state.error({
-      message: 'custom message',
-      type: 'custom'
-    });
-
-    state.onError(function(err){
+    state.onAll(function(err, data){
       expect(err.message).toEqual('custom message');
       expect(err.type).toEqual('custom');
       done();
@@ -89,7 +74,7 @@ describe('State :: Timeout', function() {
 
     state = new State();
     state.timeout(1000);
-    state.onChange(function(err, data) {
+    state.onAll(function(err, data) {
       if(err){
         expect(err.type).toEqual('timeout');
         done();
@@ -108,7 +93,7 @@ describe('State :: Timeout', function() {
     state.timeout(condition);
     condition.set(true);
 
-    state.onChange(function(err, data) {
+    state.onAll(function(err, data) {
       if(err){
         expect(1).toEqual(1);
         done();
@@ -127,7 +112,7 @@ describe('State :: Timeout', function() {
     state.timeout(condition, 1000);
     condition.set(true);
 
-    state.onChange(function(err, data) {
+    state.onAll(function(err, data) {
       if(err){
         expect(err.type).toEqual('timeout');
         done();
