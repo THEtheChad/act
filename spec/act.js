@@ -110,8 +110,6 @@ describe('Act Class', function(){
       'dep.three',
       'dep.four'
     ], function(err, data){
-      console.log(data);
-
       expect(data['dep.one']).toEqual(1);
       expect(data['dep.two']).toEqual(2);
       expect(data['dep.three']).toEqual(3);

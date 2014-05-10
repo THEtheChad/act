@@ -116,8 +116,17 @@ Act.prototype = {
     return this.state(name).timeout(state, delay);
   },
 
-  buildSubState: function(){
+  subState: function(deps){
+    var depCount, dep;
 
+    depCount = deps.length;
+
+    var i = depCount;
+    while(i--){
+      dep = deps[i];
+
+      dep.onChange();
+    }
   },
 
   onChange: function(name, func, stateful){
@@ -140,12 +149,15 @@ Act.prototype = {
   	return this.state(name).get();
   },
 
-  set: function(name, value, delimeter){
-    if( isObject(value) ){
-      delimeter = delimeter || '.';
+  set: function(name, value, opts){
+    opts = extend({
+      delimeter: '.',
+      nested: true
+    }, opts);
 
+    if( opts.nested && isObject(value) ){
       for(var key in value){
-        this.set(name + delimeter + key, value[key]);
+        this.set(name + opts.delimeter + key, value[key]);
       }
     }
 
