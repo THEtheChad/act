@@ -95,6 +95,7 @@ State.prototype = {
 
 	each: function(func){
 		var buffer, i, args;
+		buffer = this.buffer;
 		for(i = 0, il = buffer.length; i < il; i++){
 			args = buffer[i];
 
@@ -106,12 +107,12 @@ State.prototype = {
 
 	error: function(err, data){
 		data = data || null;
-		err  = new Error(err);
+		err  = (err instanceof Error) ? err : new Error(err);
 
 		this.setState(err, data);
 
 		return this;
-	}
+	},
 
 	// fire: function(type, data){
 	// 	var acts, data, i;
@@ -224,10 +225,12 @@ State.prototype = {
 		if(delay){
 			resolver = function(){
 				setTimeout(function(){
-					self.error({
-						message: 'Timeout: ' + delay + 'ms',
-						type: 'timeout'
-					});
+					var err = new Error();
+
+					err.message = 'Timeout: ' + delay + 'ms';
+					err.type = 'timeout';
+
+					self.error(err);
 					self.fire('timeout');
 				}, delay);
 			}
@@ -241,7 +244,7 @@ State.prototype = {
 		state.onCreate(resolver);
 
 		return self;
-	}
+	},
 
 	// checkState: function(type, func){
 	// 	if(!this.isNew()){
@@ -268,9 +271,9 @@ State.prototype = {
 	// 	return this.on('create', func);
 	// },
 
-	// onError: function(func){
-	// 	return this.on('error', func);
-	// },
+	onError: function(func){
+		return this.on('error', func);
+	}
 
 	// onTimeout: function(func){
 	// 	return this.on('timeout', func);
