@@ -1,5 +1,6 @@
 function Act(){
   this.states = {};
+  this.delimeter = '.';
 }
 
 Act.prototype = {
@@ -129,8 +130,16 @@ Act.prototype = {
     }
   },
 
-  onChange: function(name, func, stateful){
-  	return this.state(name).onChange(func, stateful);
+  // onChange: function(name, func, stateful){
+  // 	return this.state(name).onChange(func, stateful);
+  // },
+
+  onAll: function(name, func){
+    return this.state(name).onAll(func);
+  },
+
+  onNext: function(name, func){
+    return this.state(name).onNext(func);
   },
 
   onCreate: function(name, func){
@@ -151,13 +160,12 @@ Act.prototype = {
 
   set: function(name, value, opts){
     opts = extend({
-      delimeter: '.',
       nested: true
     }, opts);
 
     if( opts.nested && isObject(value) ){
       for(var key in value){
-        this.set(name + opts.delimeter + key, value[key]);
+        this.set(name + this.delimeter + key, value[key]);
       }
     }
 
