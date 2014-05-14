@@ -5,12 +5,13 @@ function State(obj){
 	var self = this;
 
 	self.index = 0;
-	self.bufferLength = 2;
 	self.buffer = [];
 	// self.data = [];
 	// self.data.error = null;
 
-	extend(self, obj);
+	self.define(obj);
+
+	self.bufferLength || (self.bufferLength = 3);
 
 	if(self.default) self.set(self.default);
 }
@@ -36,6 +37,15 @@ State.prototype = {
   	return true;
 	},
 
+	define: function(obj){
+		for(var k in obj) this.updateDef(k, obj);
+	},
+
+	updateDef: function(key, obj){
+		if(this.hasOwnProperty(key)) throw Error(key + ' is already defined for this state.');
+		this[key] = obj[key];
+	},
+
 	// FALLBACKS
 
 	validator: function(){
@@ -53,7 +63,7 @@ State.prototype = {
 	// STATES
 
 	isNew: function(){
-		return (this.state == null);
+		return this.isUnset();
 	},
 
 	isUnset: function(){
@@ -75,8 +85,11 @@ State.prototype = {
 	// TRIGGERS
 
 	onAll: function(func){
-		this.each(func);
-		this.onNext(func);
+		var self = this;
+		self.each(function(idx, args){
+			func.call(self, args[0], args[1]);
+		});
+		self.onNext(func);
 	},
 
 	onNext: function(func){
@@ -84,6 +97,10 @@ State.prototype = {
 	},
 
 	onCreate: function(func){
+		this.onInit(func);
+	},
+
+	onInit: function(func){
 		if( this.isUnset() ){
 			this.once('create', func);
 		}
@@ -94,12 +111,10 @@ State.prototype = {
 	},
 
 	each: function(func){
-		var buffer, i, args;
+		var buffer, i;
 		buffer = this.buffer;
 		for(i = 0, il = buffer.length; i < il; i++){
-			args = buffer[i];
-
-			func(args[0], args[1]);
+			func(i, buffer[i]);
 		}
 
 		return this;
@@ -113,74 +128,6 @@ State.prototype = {
 
 		return this;
 	},
-
-	// fire: function(type, data){
-	// 	var acts, data, i;
-
-	// 	acts = this.getActions(type);
-	// 	i    = acts.length;
-	// 	data = data || this.get();
-	// 	err  = this.buffer.error;
-
-	// 	while(i--) acts[i](err, data);
-
-	// 	return this;
-	// },
-
-	// error: function(opts){
-	// 	var err;
-
-	// 	opts = !opts.message ? {message: opts} : opts;
-
-	// 	err = extend(new Error(), opts);
-
-	// 	this.buffer.error = err;
-	// 	this.state = 'error';
-
-	// 	this.fire('error');
-	// 	this.fire('change');
-
-	// 	return this;
-	// },
-
-	// transition: function(){
-	// 	this.state = 'transition';
-	// 	this.fire('transition');
-
-	// 	return this;
-	// },
-
-	// EVENTS
-
-	// on: function(type, func, stateful){
-	// 	if(type == 'create' || stateful == null) stateful = true;
-
-	// 	if(stateful) this.checkState(type, func);
-
-	// 	this.getActions(type).push(func);
-
-	// 	return this;
-	// },
-
-	// once: function(type, func, stateful){
-	// 	var self = this;
-
-	// 	return self.on(type, function once(err, data){
-	// 		func(err, data);
-	// 		self.off(type, once);
-	// 	}, stateful);
-	// },
-
-	// off: function(type, func){
-	// 	var actions, idx;
-
-	// 	actions = this.getActions(type);
-	// 	idx = actions.indexOf(func);
-
-	// 	actions.splice(idx, 1);
-
-	// 	return this;
-	// },
 
 	// HELPERS
 
@@ -246,38 +193,10 @@ State.prototype = {
 		return self;
 	},
 
-	// checkState: function(type, func){
-	// 	if(!this.isNew()){
-	// 		var data = (type == 'create') ? this.buffer.initial : this.get();
-	// 		func(this.buffer.error, data);
-	// 	}
-	// },
-
-	// getActions: function(type){
-	// 	return this.actions[type] || (this.actions[type] = []);
-	// },
-
-	// SUGAR
-
-	// onChange: function(func, stateful){
-	// 	return this.on('change', func, stateful);
-	// },
-
-	// onTransition: function(func, stateful){
-	// 	return this.on('transition', func, stateful)
-	// },
-
-	// onCreate: function(func){
-	// 	return this.on('create', func);
-	// },
-
 	onError: function(func){
 		return this.on('error', func);
 	}
 
-	// onTimeout: function(func){
-	// 	return this.on('timeout', func);
-	// }
 };
 
-addEvents(State);
+extend(State.prototype, Events.prototype);

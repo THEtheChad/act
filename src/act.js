@@ -1,110 +1,57 @@
-function Act(){
+function Act(queue){
+  queue = queue || [];
+
   this.states = {};
   this.delimeter = '.';
+
+  var i = queue.length;
+  while(i--) this.push(queue[i]);
 }
 
 Act.prototype = {
 
-  state: function(name, opts){
-    var state;
+  isSet: function(){
+    var states = this.states;
+    var ret = [];
 
-    state = this.states[name] || (this.states[name] = new State());
+    for(var k in states){
+      if(states[k].isSet()) ret.push(k);
+    }
 
-    opts && extend(state, opts);
-
-    return state;
+    return ret;
   },
 
-  resolve: function(deps, acts, once){
-    var method, depCount, completed, data, error, errors, resolver, name, state;
+  isUnset: function(list){
+    var states = this.states;
+    var ret = [];
 
-    method = once ? 'onCreate' : 'onChange';
-
-    deps = toArray(deps);
-    acts = toArray(acts);
-    data = {};
-    error = null;
-    errors = {};
-    depCount = deps.length;
-    completed = [];
-
-    var i = acts.length;
-    while(i--){
-      if( isString(acts[i]) ){
-        acts[i] = this.state(acts[i]);
-      }
+    for(var k in states){
+      if(states[k].isUnset()) ret.push(k);
     }
 
-    function tracker(name, err, value){
-      data[name]   = value;
-      errors[name] = err;
-      if(err) error = true;
+    return ret;
+  },
 
-      if(completed.indexOf(name) == -1) completed.push(name);
-      if(completed.length == depCount){
-        var i = acts.length;
-        while(i--){
-          var func = acts[i];
+  push: function(arr){
+    var method = arr.shift();
 
-          if(func.set){
-            func.set(data);
-            err && func.error(errors);
-          }
-          else{
-            func(err && errors, data);
-          }
-        }
-      }
+    if(this[method]){
+      this[method].apply(this, arr);      
     }
-
-    var i = depCount;
-    while(i--){
-      name = deps[i];
-      state = this.state(name);
-
-      resolver = (function(name, tracker){
-        return function(err, data){
-          tracker(name, err, data);
-        }
-      })(name, tracker);
-
-      state[method](resolver);
+    else{
+      console.log(method + ' is undefined');
     }
+  },
 
-  	// var i, evt, def, depCount, collector, completed;
+  state: function(name, opts){
+    opts = opts || {};
+    opts.name = name;
 
-   //  if( isString(func) ){
-   //    func = this.state(func);
-   //  }
+    return this.states[name] || (this.states[name] = new State(opts));
+  },
 
-  	// depCount  = i = deps.length;
-  	// completed = [];
-  	// collector = {};
-
-  	// while(i--){
-  	// 	evt = deps[i];
-  	// 	def = this.state(evt);
-  	// 	collector[evt] = def;
-
-  	// 	resolver = (function(evt, depCount, collector, completed, func){
-  	// 		return function(){
-  	// 			if(completed.indexOf(evt) == -1){
-  	// 				completed.push(evt);
-  	// 			}
-
-  	// 			if(completed.length == depCount){
-   //          if(func instanceof State){
-   //            func.set(collector);
-   //          }
-   //          else{
-   //            func(collector);
-   //          }
-   //        }
-  	// 		}
-  	// 	})(evt, depCount, collector, completed, func);
-
-  	// 	def.on('change', resolver, true);
-  	// }
+  define: function(name, opts){
+    
   },
 
   timeout: function(name, state, delay){
@@ -130,16 +77,57 @@ Act.prototype = {
     }
   },
 
-  // onChange: function(name, func, stateful){
-  // 	return this.state(name).onChange(func, stateful);
-  // },
+  resolve: function(method, list, acts){
+    var resolved, complete, depCount, errs, collector;
+
+    complete = new State();
+    complete.onAll(acts);
+
+    resolved = [];
+
+    depCount = list.length;
+
+    errs = null;
+    collector = {};
+
+    var resolver = function(err, data, type){
+      var name = this.name;
+
+      if(err){
+        errs || (errs = {});
+        errs[name] = err;
+      }
+
+      collector[name] = data;
+
+      if(resolved.indexOf(this.name) == -1){
+        resolved.push(this.name);
+      }
+
+      if(resolved.length == depCount){
+        complete.setState(errs, collector);
+      }
+    };
+
+    for(var i = 0, il = depCount; i < il; i++){
+      this.state(list[i])[method](resolver);
+    }
+
+    return this;
+  },
 
   onAll: function(name, func){
+    if(isArray(name)) return this.resolve('onAll', name, func);
+
     return this.state(name).onAll(func);
   },
 
   onNext: function(name, func){
     return this.state(name).onNext(func);
+  },
+
+  onInit: function(name, func){
+    return this.state(name).onInit(func);
   },
 
   onCreate: function(name, func){
@@ -172,3 +160,5 @@ Act.prototype = {
     return this.state(name).set(value);
   }
 }
+
+ACT = new Act(ACT);

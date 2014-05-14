@@ -1,4 +1,4 @@
-describe('addEvents', function() {
+describe('Events Class', function() {
 
   var instance;
 
@@ -6,7 +6,7 @@ describe('addEvents', function() {
   Class.prototype = {};
 
   beforeEach(function(){
-    addEvents(Class);
+    extend(Class.prototype, Events.prototype);
     instance = new Class();
   });
 
@@ -70,6 +70,27 @@ describe('addEvents', function() {
 
     instance.fire('meep', err, data);
     expect(count).toBe(1);
-  });  
+  });
+
+  it('should have a method for firing on all actions', function() {
+
+    var err  = 1;
+    var data = 2;
+
+    var type = '';
+
+    function listener(e, d, t){ type = t }
+
+    instance.on('all', listener);
+
+    instance.fire('meep', err, data);
+    expect(type).toBe('meep');
+
+    instance.fire('change', err, data);
+    expect(type).toBe('change');
+
+    instance.fire('error', err, data);
+    expect(type).toBe('error');
+  });
 
 });

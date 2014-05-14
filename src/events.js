@@ -1,8 +1,6 @@
-function addEvents(obj){
-	extend(obj.prototype, addEvents.prototype);
-}
+function Events(){}
 
-addEvents.prototype = {
+Events.prototype = {
 
 	getActions: function(type){
 		this.actions || (this.actions = {});
@@ -15,7 +13,12 @@ addEvents.prototype = {
 		actions = this.getActions(type);
 		i = actions.length;
 
-		while(i--) actions[i](err, data);
+		while(i--) actions[i].call(this, err, data, type);
+
+		actions = this.getActions('all');
+		i = actions.length;
+
+		while(i--) actions[i](err, data, type);		
 
 		return this;
 	},

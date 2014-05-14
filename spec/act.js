@@ -2,27 +2,7 @@
 
 describe('Act Class', function(){
 
-  it('onNext', function() {
-
-    var act, count;
-
-    act = new Act();
-    count = 0;
-
-    act.set('custom.event', 1234);
-
-    act.onNext('custom.event', function(){
-      count++;
-    });
-
-    act.set('custom.event', 2);
-    act.set('custom.event', 3);
-    act.set('custom.event', 4);
-
-    expect(count).toEqual(3);
-  });
-
-  it('onAll', function() {
+  it('onAll', function(){
 
     var act, count;
 
@@ -43,21 +23,20 @@ describe('Act Class', function(){
     expect(count).toEqual(5);
   });
 
-  it('onCreate', function() {
+  it('onInit', function() {
 
     var act, value;
 
     act = new Act();
 
     act.set('custom.event', 1234);
-
-    act.onCreate('custom.event', function(err, data){
-      value = data;
-    });
-
     act.set('custom.event', 2);
     act.set('custom.event', 3);
     act.set('custom.event', 4);
+
+    act.onInit('custom.event', function(err, data){
+      value = data;
+    });
 
     expect(value).toEqual(1234);
 
@@ -66,6 +45,76 @@ describe('Act Class', function(){
     }, false);
 
     expect(value).toEqual(1234);
+  });
+
+  it('onCreate', function() {
+
+    var act, value;
+
+    act = new Act();
+
+    act.set('custom.event', 1234);
+    act.set('custom.event', 2);
+    act.set('custom.event', 3);
+    act.set('custom.event', 4);
+
+    act.onCreate('custom.event', function(err, data){
+      value = data;
+    });
+
+    expect(value).toEqual(1234);
+
+    act.onCreate('custom.event', function(err, data){
+      value = data;
+    }, false);
+
+    expect(value).toEqual(1234);
+  });
+
+  it('onAll (multi)', function(done){
+
+    var act;
+
+    act = new Act();
+
+    act.set('data1', 1234);
+    act.set('data2', 2);
+    act.set('data3', 3);
+    act.set('data4', 4);
+
+    act.onAll([
+      'data1',
+      'data2',
+      'data3',
+      'data4'
+    ], function(err, data){
+      expect(1).toBe(1);
+      done();
+    });
+
+  });
+
+  it('onInit (multi)', function(done){
+
+    var act;
+
+    act = new Act();
+
+    act.set('data1', 1234);
+    act.set('data2', 2);
+    act.set('data3', 3);
+    act.set('data4', 4);
+
+    act.onInit([
+      'data1',
+      'data2',
+      'data3',
+      'data4'
+    ], function(err, data){
+      expect(1).toBe(1);
+      done();
+    });
+
   });
 
   // it('resolve', function() {

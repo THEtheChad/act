@@ -1,10 +1,13 @@
-describe('State', function() {
+describe('State Class', function() {
+
+  var state;
+
+  beforeEach(function(){
+    state = new State();
+  });
 
   it('set -- set + get', function() {
 
-    var state;
-
-    state = new State();
     state.set('123');
 
     expect(state.get()).toEqual('123');
@@ -13,9 +16,6 @@ describe('State', function() {
 
   it('set -- set + onAll', function(done) {
 
-    var state;
-
-    state = new State();
     state.set('123');
 
     state.onAll(function(err, data){
@@ -25,15 +25,44 @@ describe('State', function() {
 
   });
 
-});
+  it('onAll', function() {
 
-describe('State :: Errors', function(){
+    var count = 0;
+
+    state.set(1);
+    state.set(2);
+    state.set(3);
+
+    state.onAll(function(err, data){
+      count++;
+      expect(data).toBe(count);
+    });
+
+    expect(count).toBe(3);
+
+  });
+
+  it('onNext', function() {
+
+    var count = 0;
+
+    state.set(1);
+    state.set(2);
+    state.set(3);
+
+    state.onNext(function(err, data){
+      count++;
+      expect(data).toBe(4);
+    });
+
+    state.set(4);
+
+    expect(count).toBe(1);
+
+  });
 
   it('error -- message', function(done) {
 
-    var state;
-
-    state = new State();
     state.error('Data is broken.');
 
     state.onAll(function(err, data){
@@ -44,10 +73,6 @@ describe('State :: Errors', function(){
   });
 
   it('error -- custom-type', function(done) {
-
-    var state;
-
-    state = new State();
 
     var err = new Error();
 
@@ -64,15 +89,8 @@ describe('State :: Errors', function(){
 
   });
 
-});
-
-describe('State :: Timeout', function() {
-
   it('timeout -- ms', function(done) {
 
-    var state;
-
-    state = new State();
     state.timeout(1000);
     state.onAll(function(err, data) {
       if(err){
@@ -85,9 +103,8 @@ describe('State :: Timeout', function() {
 
   it('timeout -- state', function(done) {
 
-    var state, condition;
+    var condition;
 
-    state = new State();
     condition = new State();
 
     state.timeout(condition);
@@ -104,9 +121,8 @@ describe('State :: Timeout', function() {
 
   it('timeout -- state + ms', function(done) {
 
-    var state, condition;
+    var condition;
 
-    state = new State();
     condition = new State();
 
     state.timeout(condition, 1000);
@@ -121,136 +137,47 @@ describe('State :: Timeout', function() {
 
   });
 
+  it('define -- mutator', function() {
+
+    state.define({
+      mutator: function(data){
+        return 41;
+      }
+    });
+
+    state.set(2);
+
+    expect(state.get()).toBe(41);
+
+  });
+
+  it('define -- validator', function() {
+
+    state.define({
+      validator: function(data){
+        return false;
+      }
+    });
+
+    expect(state.set(41)).toBe(false);
+  });
+
+  it('define -- 2x throw error', function() {
+
+    state.define({
+      validator: function(data){
+        return false;
+      }
+    });
+
+    expect(function(){
+      state.define({
+        validator: function(data){
+          return false;
+        }
+      });
+    }).toThrowError();
+
+  });
+
 });
-
-
-// describe('Definition Class', function() {
-
-//   it('on (stateless)', function() {
-
-//     var def, count;
-
-//     def = new Definition();
-//     count = 0;
-
-//     def.set(1);
-
-//     def.on('change', function(){
-//       count++;
-//     });
-
-//     def.set(2);
-//     def.set(3);
-//     def.set(4);
-
-//     expect(count).toEqual(3);
-//   });
-
-//   it('on (stateful)', function() {
-
-//     var def, count;
-
-//     def = new Definition();
-//     count = 0;
-
-//     def.set(1);
-
-//     def.on('change', function(){
-//       count++;
-//     }, true);
-
-//     def.set(2);
-//     def.set(3);
-//     def.set(4);
-
-//     expect(count).toEqual(4);
-//   });
-
-//   it('once pre-fire (stateless)', function() {
-
-//     var def, count;
-
-//     def = new Definition();
-//     count = 0;
-
-//     def.set(1);
-
-//     def.one('change', function(){
-//       count++;
-//     });
-
-//     expect(count).toEqual(0);
-//   });
-
-//   it('once post-fire (stateless)', function() {
-
-//     var def, count;
-
-//     def = new Definition();
-//     count = 0;
-
-//     def.set(1);
-
-//     def.one('change', function(){
-//       count++;
-//     });
-
-//     def.set(2);
-//     def.set(3);
-//     def.set(4);
-
-//     expect(count).toEqual(1);
-//   });
-
-//   it('validator', function() {
-
-//     var def, success;
-
-//     def = new Definition({
-//       valid: function(data){ return (data == 2) }
-//     });
-
-//     success1 = def.set(1);
-//     success2 = def.set(2);
-
-//     expect(success1).toBe(false);
-//     expect(success2).toBe(true);
-//   });
-
-//   it('one create (stateful)', function(done) {
-
-//     var def;
-
-//     def = new Definition();
-
-//     def.set(1);
-//     def.set(2);
-//     def.set(3);
-//     def.set(4);
-//     def.set(5);
-
-//     def.one('create', function(data){
-//       expect(data).toEqual(1);
-//       done();
-//     }, true);
-//   });
-
-//   it('on create (stateful)', function(done) {
-
-//     var def;
-
-//     def = new Definition();
-
-//     def.set(1);
-//     def.set(2);
-//     def.set(3);
-//     def.set(4);
-//     def.set(5);
-
-//     def.on('create', function(data){
-//       expect(data).toEqual(1);
-//       done();
-//     }, true);
-//   });
-
-// });
