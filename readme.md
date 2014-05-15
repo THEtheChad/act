@@ -20,19 +20,9 @@ As confusing as it may be, each state in Act can be in one of 3 states itself:
 
 Most applications of Act will not require this knowledge, but it's important to understand it up front so you won't get confused later.
 
-## Event Types
+## Buffer
 
-There are 5 types of events that can occur in Act. A listener can be bound to each of these events.
-
-- create
-- update
-- destroy
-- change (create & update & destroy)
-- transition | changing
-
-## History
-
-Record of all states/data. For example, if a 
+Every state has a buffer that stores each successive value of the state. This makes act extremely friendly for asynchronous environments where there's no guarantee that a listener will be bound before the state is set.
 
 # Methods
 
