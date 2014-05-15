@@ -8,6 +8,8 @@ function Act(queue){
   while(i--) this.push(queue[i]);
 }
 
+Act.bufferSize = 3;
+
 Act.prototype = {
 
   isSet: function(){
@@ -46,6 +48,7 @@ Act.prototype = {
   state: function(name, opts){
     opts = opts || {};
     opts.name = name;
+    opts.bufferSize = Act.bufferSize;
 
     return this.states[name] || (this.states[name] = new State(opts));
   },

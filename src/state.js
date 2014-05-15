@@ -11,7 +11,7 @@ function State(obj){
 
 	self.define(obj);
 
-	self.bufferLength || (self.bufferLength = 3);
+	self.bufferSize || (self.bufferSize = 3);
 
 	if(self.default) self.set(self.default);
 }
@@ -138,7 +138,7 @@ State.prototype = {
 
 		idx = this.buffer.push(dataSet);
 
-		if(idx > this.bufferLength){
+		if(idx > this.bufferSize){
 			this.buffer.shift();
 		}
 		else{

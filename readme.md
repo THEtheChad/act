@@ -24,6 +24,8 @@ Most applications of Act will not require this knowledge, but it's important to 
 
 Every state has a buffer that stores each successive value of the state. This makes act extremely friendly for asynchronous environments where there's no guarantee that a listener will be bound before the state is set.
 
+The default buffer size is 3, but this can be defined globally via `Act.bufferSize` or on a case by case basis in the state definition.
+
 # Methods
 
 ## set
