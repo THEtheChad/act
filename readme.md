@@ -34,39 +34,52 @@ There are 5 types of events that can occur in Act. A listener can be bound to ea
 
 Record of all states/data. For example, if a 
 
+# Methods
 
-
-
-
-# Stateless Trigger
-
-A stateless event trigger. Only listeners bound before the trigger will react to the event. Data can be passed from the trigger to the event.
+## set
 
 ```
-var data = 'data';
-function listener(){
-	console.log('listener', data);
-}
-
-act.on('event', listener);
-act.trigger('event', data);
-
-act.on('event', listener); // does not fire
-
+act.set('user.firstName', 'Chad');
 ```
 
-# Stateless Trigger (once)
+## onAll
+
+This method will trigger the listener on all state changes, including those that have been bufferd before the listener was bound.
 
 ```
-var data = 'data';
-function listener(){
-	console.log('listener', data);
-}
+act.set('user.firstName', 'Raphael');
+act.set('user.firstName', 'Donatello');
 
-act.one('event', listener);
-act.trigger('event', data);
-act.trigger('event', data); // does not fire event again
+act.onAll('user.firstName', function(err, data){
+	console.log(data);
+});
 
+// Raphael
+// Donatello
+
+act.set('user.firstName', 'Leonardo');
+
+// Leonardo
+
+act.set('user.firstName', 'Michaelangello');
+
+// Michaelangello
 ```
 
-# 
+## onInit
+
+This method will trigger the listener only when the state is initially set. Subsequent state changes will be ignored.
+
+```
+act.set('user.firstName', 'Raphael');
+act.set('user.firstName', 'Donatello');
+
+act.onInit('user.firstName', function(err, data){
+	console.log(data);
+});
+
+// Raphael
+
+act.set('user.firstName', 'Leonardo');
+act.set('user.firstName', 'Michaelangello');
+```
