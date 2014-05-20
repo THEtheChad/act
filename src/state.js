@@ -106,7 +106,7 @@ State.prototype = {
 		}
 		else{
 			var args = this.buffer.initial;
-			func(args[0], args[1]);
+			func.call(this, args[0], args[1]);
 		}
 	},
 

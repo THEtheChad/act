@@ -18,7 +18,7 @@ Events.prototype = {
 		actions = this.getActions('all');
 		i = actions.length;
 
-		while(i--) actions[i](err, data, type);		
+		while(i--) actions[i].call(this, err, data, type);		
 
 		return this;
 	},
@@ -33,7 +33,7 @@ Events.prototype = {
 		var self = this;
 
 		return self.on(type, function once(err, data){
-			func(err, data);
+			func.call(this, err, data);
 			self.off(type, once);
 		});
 	},

@@ -81,7 +81,9 @@ Act.prototype = {
   },
 
   resolve: function(method, list, acts){
-    var resolved, complete, depCount, errs, collector;
+    var resolved, complete, depCount, self;
+
+    self = this;
 
     complete = new State();
     complete.onAll(acts);
@@ -90,33 +92,41 @@ Act.prototype = {
 
     depCount = list.length;
 
-    errs = null;
-    collector = {};
-
     var resolver = function(err, data, type){
       var name = this.name;
-
-      if(err){
-        errs || (errs = {});
-        errs[name] = err;
-      }
-
-      collector[name] = data;
 
       if(resolved.indexOf(this.name) == -1){
         resolved.push(this.name);
       }
 
-      if(resolved.length == depCount){
-        complete.setState(errs, collector);
+      if(resolved.length < depCount) return;
+
+      var collector = {};
+      var errs = null;
+
+      for(var i = 0, il = resolved.length; i < il; i++){
+        var name = resolved[i];
+        var value = self.state(name).get();
+
+        if(value instanceof Error){
+          (errs || (errs = {}))[name] = value;
+        }
+        else{
+          collector[name] = value;
+        }
+      }
+
+      complete.setState(errs, collector);
+      if(method == 'once'){
+        complete.off(acts);
       }
     };
 
     for(var i = 0, il = depCount; i < il; i++){
-      this.state(list[i])[method](resolver);
+      self.state(list[i]).onAll(resolver);
     }
 
-    return this;
+    return self;
   },
 
   onAll: function(name, func){
@@ -125,11 +135,19 @@ Act.prototype = {
     return this.state(name).onAll(func);
   },
 
+  once: function(name, func){
+    if(isArray(name)) return this.resolve('once', name, func);
+
+    return this.state(name).once(func);
+  },
+
   onNext: function(name, func){
     return this.state(name).onNext(func);
   },
 
   onInit: function(name, func){
+    if(isArray(name)) return this.resolve('onInit', name, func);
+
     return this.state(name).onInit(func);
   },
 
@@ -164,4 +182,4 @@ Act.prototype = {
   }
 }
 
-ACT = new Act(ACT);
+// ACT = new Act(ACT);
