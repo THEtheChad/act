@@ -117,6 +117,40 @@ describe('Act Class', function(){
 
   });
 
+  it('once', function(){
+
+    var act;
+
+    act = new Act();
+
+    act.set('data1', 1234);
+    act.set('data2', 2);
+    act.set('data3', 3);
+    act.set('data4', 4);
+
+    act.set('data4', 7);
+    act.set('data4', 88);
+
+    act.once([
+      'data1',
+      'data2',
+      'data3',
+      'data4'
+    ], function(err, data){
+      expect(data).toEqual({
+        'data1': 1234,
+        'data2': 2,
+        'data3': 3,
+        'data4': 88
+      });
+    });
+
+    act.set('data1', 11);
+    act.set('data2', 11);
+    act.set('data3', 11);
+    act.set('data4', 11);
+  });
+
   // it('resolve', function() {
 
   //   var act, data;
