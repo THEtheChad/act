@@ -22,21 +22,114 @@ Most applications of Act will not require this knowledge, but it's important to 
 
 ## Buffer
 
-Every state has a buffer that stores each successive value of the state. This makes act extremely friendly for asynchronous environments where there's no guarantee that a listener will be bound before the state is set.
+Every state has a buffer that stores each successive value of the state. This makes act extremely friendly for asynchronous environments where there's no guarantee that an action will be bound before the state is set.
 
 The default buffer size is 3, but this can be defined globally via `Act.bufferSize` or on a case by case basis in the state definition.
 
 # Methods
 
-## set
+## get
+---
+
+The `get` method is used to retrieve the current value of a state.
+
+** IMPORTANT **  
+The action is ONLY performed once the state or states have been set.
+
+#### Single State
+
+This form of the method retrieves the value for a single state.
+
+###### Params
+
+Identifier | Type
+---------- | --------
+State Name | String
+Action     | Function
 
 ```
-act.set('user.firstName', 'Chad');
+act.get('firstName', function(err, data){
+	var firstName = data.firstName;
+});
+```
+#### Multiple States
+
+This form of the method retrieves all of the values from a list of states (given in the form of an array).
+
+** IMPORTANT **  
+The action will ONLY be performed once all of the states have been set.
+
+##### Params
+
+Identifier  | Type
+----------- | --------
+State Names | Array
+Action      | Function
+
+```
+act.get([
+	'firstName',
+	'lastName'
+], function(err, data){
+	var firstName = data.firstName;
+	var lastName = data.lastName;
+});
+```
+
+## set
+---
+The `set` method is used to assign a value to the current state. This is the simplest method in the ACT API.
+
+##### Params
+
+Identifier  | Type
+----------- | --------
+State Name  | String
+Value       | Any
+
+```
+act.set('firstName', 'Chad');
+```
+
+## on
+---
+The `on` method is used to perform an action anytime a state or states is set. The action will be passed a copy of the current value of the state or states being watched.
+
+** IMPORTANT **  
+The `on` method will only perform the action when the state or states in question are altered. It does not care if the states have been previously set.
+
+##### Params
+
+Identifier  | Type
+----------- | --------
+State Name  | String
+Action      | Function
+
+```
+act.set('firstName', 'Chad');
+
+act.on('firstName', function(err, data){
+	var firstName = data.firstName;
+});
+
+// ** IMPORTANT **
+// The action has not been performed yet
+
+act.set('firstName', 'Henry');
+// NOW the action is performed
 ```
 
 ## onAll
+---
 
-This method will trigger the listener on all state changes, including those that have been bufferd before the listener was bound.
+The `onAll` method will perform the given action for all state changes, including those that have been buffered before the action was assigned.
+
+##### Params
+
+Identifier  | Type
+----------- | --------
+State Name  | String
+Action      | Function
 
 ```
 act.set('user.firstName', 'Raphael');
@@ -59,12 +152,24 @@ act.set('user.firstName', 'Michaelangello');
 ```
 
 ## onInit
+---
 
-This method will trigger the listener only when the state is initially set. Subsequent state changes will be ignored.
+The `onInit` method will perform the given action once the state has been set. Subsequent state changes will be ignored.
+
+** IMPORTANT **  
+The `onInit` method will ONLY pass the inititial value that was assigned when the state was set.
+
+##### Params
+
+Identifier  | Type
+----------- | --------
+State Name  | String
+Action      | Function
 
 ```
 act.set('user.firstName', 'Raphael');
 act.set('user.firstName', 'Donatello');
+act.set('user.firstName', 'Leonardo');
 
 act.onInit('user.firstName', function(err, data){
 	console.log(data);
@@ -72,6 +177,5 @@ act.onInit('user.firstName', function(err, data){
 
 // Raphael
 
-act.set('user.firstName', 'Leonardo');
 act.set('user.firstName', 'Michaelangello');
 ```
