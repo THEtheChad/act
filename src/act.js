@@ -2,13 +2,14 @@ function Act(queue){
   queue = queue || [];
 
   this.states = {};
-  this.delimeter = '.';
+  this.delimeter = Act.delimeter;
 
   var i = queue.length;
   while(i--) this.push(queue[i]);
 }
 
 Act.bufferSize = 3;
+Act.delimeter = '.';
 
 Act.prototype = {
 
