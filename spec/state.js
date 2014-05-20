@@ -10,7 +10,9 @@ describe('State Class', function() {
 
     state.set('123');
 
-    expect(state.get()).toEqual('123');
+    state.get(function(err, val){
+      expect(val).toEqual('123');
+    });
 
   });
 
@@ -147,7 +149,9 @@ describe('State Class', function() {
 
     state.set(2);
 
-    expect(state.get()).toBe(41);
+    state.get(function(err, val){
+      expect(val).toBe(41);
+    });
 
   });
 

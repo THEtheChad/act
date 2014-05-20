@@ -20,11 +20,28 @@ State.prototype = {
 
 	// ACCESSORS
 
-	get: function(idx, ret){
-		idx = idx || this.index;
-		ret = this.buffer[idx];
+	get: function(func){
+		if(!func){
+			var state = this._get();
+			return state[0] || state[1];
+		}
 
-		return ret[0] || ret[1];
+		if(this.isSet()){
+			var state = this._get();
+			func(state[0], state[1]);
+		}
+		else{
+			this.once('change', func);
+		}
+	},
+
+	_get: function(idx){
+		var ret;
+
+		idx = idx || this.index;
+		ret = this.buffer[idx] || [];
+
+		return ret;
 	},
 
 	set: function(data, err){
@@ -79,7 +96,7 @@ State.prototype = {
 	},
 
 	hasError: function(){
-		return (this.get() instanceof Error);
+		return (this._get()[0]);
 	},
 
 	// TRIGGERS

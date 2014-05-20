@@ -130,6 +130,10 @@ Act.prototype = {
     return self;
   },
 
+  on: function(name, func){
+    return this.state(name).on(func);
+  },
+
   onAll: function(name, func){
     if(isArray(name)) return this.resolve('onAll', name, func);
 
@@ -164,8 +168,8 @@ Act.prototype = {
   	return this.state(name).error(msg);
   },
 
-  get: function(name){
-  	return this.state(name).get();
+  get: function(name, func){
+  	return this.state(name).get(func);
   },
 
   set: function(name, value, opts){

@@ -2,6 +2,28 @@
 
 describe('Act Class', function(){
 
+  it('desc', function(){
+
+    var act;
+    act = new Act();
+
+    act.onAll('page.load', function(err, data){
+
+      act.get([
+        'userName',
+        'intellgience'
+      ], function(err, data){
+        expect(data.userName).toBe('Chad');
+        expect(data.intellgience).toBe('genius');
+      });
+    });
+
+    act.set('userName', 'Chad');
+    act.set('intellgience', 'genius');
+
+    act.set('page.load', true);
+  });
+
   it('onAll', function(){
 
     var act, count;
